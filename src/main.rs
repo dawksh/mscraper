@@ -5,9 +5,9 @@ use tokio::sync::Mutex;
 use std::sync::Arc;
 
 
-fn fetch_url(url: &str) -> Result<String, Error> {
-    let response = reqwest.get(url).await?;
-    let body = response.text.await?;
+async fn fetch_url(url: &str) -> Result<String, Error> {
+    let response = reqwest::get(url).await?;
+    let body = response.text().await?;
     Ok(body)
 }
 
@@ -20,14 +20,14 @@ fn parse_html(html: &str) {
     }
 }
 
-async fn scrape_multiple_urls(urls: Vec<&str>) {
+async fn scrape_multiple_urls(urls: Vec<String>) {
     let data = Arc::new(Mutex::new(vec![]));
     let mut handles = vec![];
 
     for url in urls {
         let data = Arc::clone(&data);
         let handle = tokio::spawn(async move {
-            if let Ok(html) = fetch_url(url).await {
+            if let Ok(html) = fetch_url(&url).await {
                 parse_html(&html);
                 data.lock().await.push(html);
             }
@@ -43,8 +43,8 @@ async fn scrape_multiple_urls(urls: Vec<&str>) {
 #[tokio::main]
 async fn main() {
     let urls = vec![
-        "https://dakshk.xyz";
+        "https://dakshk.xyz".to_string(),
     ];
 
-    scrape_mutiple_urls(urls);l
+    scrape_multiple_urls(urls).await;
 }
