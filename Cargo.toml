@@ -7,3 +7,4 @@ edition = "2021"
 reqwest = { version = "0.11", features = ["json", "blocking"] }
 tokio = { version = "1", features = ["full"] }
 scraper = "0.12"
+dashmap = "5.4"

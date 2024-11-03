@@ -1,13 +1,12 @@
 use std::env;
-use std::collections::HashSet;
 use reqwest::{Client, Error};
 use scraper::{Html, Selector};
-use tokio::sync::Mutex;
+use tokio::sync::RwLock;
 use std::sync::Arc;
-
+use dashmap::DashSet;
 
 async fn fetch_url(client: &Client, url: &str) -> Result<String, Error> {
-    let response = client.get(url).await?;
+    let response = client.get(url).send().await?;
     let body = response.text().await?;
     Ok(body)
 }
@@ -18,13 +17,13 @@ fn parse_html(html: &str) -> Vec<String> {
     document.select(&selector).filter_map(|element| element.value().attr("href")).map(|link| link.to_string()).collect()
 }
 
-async fn scrape_multiple_urls(client: Arc<Client>, url: String, depth: usize, max_depth: usize, visited: Arc<Mutex<HashSet<String>>>) {
+async fn scrape_multiple_urls(client: Arc<Client>, url: String, depth: usize, max_depth: usize, visited: Arc<RwLock<DashSet<String>>>) {
     if depth > max_depth {
         return;
     }
 
     {
-        let mut visited = visited.lock().await;
+        let mut visited = visited.write().await;
         if visited.contains(&url) {
             return;
         }
@@ -73,7 +72,7 @@ async fn scrape_multiple_urls(client: Arc<Client>, url: String, depth: usize, ma
 async fn main() {
     let url = "https://dakshk.xyz".to_string();
     let client = Arc::new(Client::new());
-    let visited = Arc::new(Mutex::new(HashSet::new()));
+    let visited = Arc::new(RwLock::new(DashSet::new()));
     let args: Vec<String> = env::args().collect();
     let depth: usize = args[1].parse().unwrap();
     scrape_multiple_urls(client, url, 0, depth, visited).await;
