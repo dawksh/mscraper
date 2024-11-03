@@ -1,9 +1,6 @@
 
 use reqwest::Error;
 use scraper::{Html, Selector};
-use tokio::sync::Mutex;
-use std::sync::Arc;
-
 
 async fn fetch_url(url: &str) -> Result<String, Error> {
     let response = reqwest::get(url).await?;
@@ -21,15 +18,12 @@ fn parse_html(html: &str) {
 }
 
 async fn scrape_multiple_urls(urls: Vec<String>) {
-    let data = Arc::new(Mutex::new(vec![]));
     let mut handles = vec![];
 
     for url in urls {
-        let data = Arc::clone(&data);
         let handle = tokio::spawn(async move {
             if let Ok(html) = fetch_url(&url).await {
                 parse_html(&html);
-                data.lock().await.push(html);
             }
         });
         handles.push(handle);
